@@ -1,9 +1,7 @@
 # 🚀 프론트엔드 배포 파이프라인
-
-## 📝 개요
 본 프로젝트는 **GitHub Actions을 활용하여 AWS S3 및 CloudFront를 기반으로 Next.js 프로젝트를 자동 배포하는 CI/CD 파이프라인**을 구축하였습니다.  
 
----
+<br/>
 
 ## 📌 배포 흐름 (CI/CD Pipeline)
 
@@ -17,7 +15,7 @@
 8. **CloudFront 캐시 무효화** (`aws cloudfront create-invalidation`)
 9. ✅ **배포 완료 🎉**
 
----
+<br/>
 
 ## 📌 상세 배포 과정
 ![배포 인프라 다이어그램](https://github.com/user-attachments/assets/5a049059-22ba-449d-a525-554edf91bb1e)
@@ -33,13 +31,13 @@
    - 캐시 무효화를 수행하여 즉시 최신 콘텐츠 제공
 5. **사용자는 CloudFront 도메인을 통해 웹사이트에 접속**  
 
----
+<br/>
 
 ## 🌐 주요 링크
-- **S3 버킷 웹사이트 엔드포인트:** http://hanghae41.s3-website.us-east-2.amazonaws.com/
-- **CloudFront 배포 도메인:** https://d29p92crmmop5c.cloudfront.net
+- **S3 버킷 웹사이트 엔드포인트:** [http://hanghae41.s3-website.us-east-2.amazonaws.com](http://hanghae41.s3-website.us-east-2.amazonaws.com/)
+- **CloudFront 배포 도메인:** [https://d29p92crmmop5c.cloudfront.net](https://d29p92crmmop5c.cloudfront.net/)
 
----
+<br/>
 
 ## 📌 주요 개념
 
@@ -68,3 +66,48 @@
 
   ```sh
   aws cloudfront create-invalidation --distribution-id ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }} --paths "/*"
+
+<br/>
+
+# 🚀 CDN 도입 전후 성능 개선 보고서
+
+## **1. 테스트 환경**
+### **1.1 CDN 적용 전 (S3 직접 접근)**
+<img width="1680" alt="image" src="https://github.com/user-attachments/assets/4f6bfb76-e0ff-41b6-bff4-93f46a09e045" />
+
+- 직접 S3 웹사이트 호스팅 기능을 사용하여 배포
+
+### **1.2 CDN 적용 후 (CloudFront 배포)**
+<img width="1680" alt="image" src="https://github.com/user-attachments/assets/341b5b09-fd3e-46ef-8e7e-3201e54c6e3b" />
+
+- CloudFront를 통해 캐싱 및 CDN을 활용한 배포
+
+<br/>
+
+## **2. 네트워크 성능 비교**
+### 📊 **주요 성능 지표**
+
+| 항목 | S3 직접 접근 | CloudFront CDN 적용 | 🚀 개선 효과 |
+|------|------------|-----------------|----------|
+| **문서 파일 (index.html) 크기** | 310 B | 261 B | 49 B 감소 (📉 15.8%) |
+| **문서 파일 (index.html) 로드 시간** | 397 ms | 37 ms | 360 ms 단축 (⚡ 약 10배 빠름) |
+| **폰트 파일 (woff2) 로드 시간** | 399 ms | 37 ms | 362 ms 단축 |
+| **스타일시트 (CSS) 로드 시간** | 0 ms (캐시) | 12 ms | - |
+| **스크립트 파일 로드 시간** | 평균 395 ms | 평균 21 ms | 약 374 ms 단축 |
+
+<br/>
+
+## **3. 분석 및 성능 개선 효과**
+### **⚡ 3.1 로딩 속도 개선**
+- CDN 적용 후, 전체적으로 요청 응답 시간이 현저히 단축됨.
+- **특히 주요 HTML 및 스크립트 리소스 로드 속도가 약 10배 이상 개선됨**.
+- 주요 정적 리소스(폰트, JavaScript, 이미지 등)의 로드 시간이 평균 **350ms 이상 감소**.
+
+### **🌎 3.2 네트워크 요청 최적화**
+- S3 직접 접근 시에는 **모든 리소스가 원본 S3 서버에서 직접 제공**되므로 지연 시간이 발생.
+- CloudFront 적용 후에는 **가장 가까운 엣지 로케이션(POP)에서 콘텐츠를 제공**하여 대기 시간을 최소화함.
+
+### **📦 3.3 파일 크기 최적화**
+- HTML 문서 크기가 310B → 261B로 **15.8% 감소**.
+- CloudFront에서 Gzip 압축 또는 Brotli 압축이 자동 적용될 가능성이 있음.
+- CSS 및 JS 파일도 캐싱 효과로 빠르게 제공됨.
