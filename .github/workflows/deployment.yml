@@ -3,7 +3,7 @@ name: Deploy Next.js with pnpm
 on:
   push:
     branches:
-      - main
+      - main  # 또는 master (필요에 따라 변경)
   workflow_dispatch:
 
 jobs:
@@ -17,14 +17,30 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '18' # 또는 최신 LTS 버전
+          node-version: '20.18.1'
           cache: 'pnpm'
 
       - name: Install pnpm (without corepack)
-        run: npm install -g pnpm
+        run: |
+          npm install -g pnpm
+          echo "$(pnpm root -g)/bin" >> $GITHUB_PATH  # GitHub Actions 환경에서 PATH에 추가
+          pnpm -v  # 설치 확인
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
       - name: Build project
         run: pnpm build
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Deploy to S3
+        run: aws s3 sync out/ s3://${{ secrets.S3_BUCKET_NAME }} --delete
+
+      - name: Invalidate CloudFront cache
+        run: aws cloudfront create-invalidation --distribution-id ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }} --paths "/*"
