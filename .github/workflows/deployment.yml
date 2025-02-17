@@ -1,9 +1,9 @@
-name: Deploy Next.js with pnpm
+name: Deploy Next.js to S3 and invalidate CloudFront
 
 on:
   push:
     branches:
-      - main  # 또는 master (필요에 따라 변경)
+      - main # 또는 master, 프로젝트의 기본 브랜치 이름에 맞게 조정
   workflow_dispatch:
 
 jobs:
@@ -14,23 +14,11 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20.18.1'
-          cache: 'pnpm'
-
-      - name: Install pnpm (without corepack)
-        run: |
-          npm install -g pnpm
-          echo "$(pnpm root -g)/bin" >> $GITHUB_PATH  # GitHub Actions 환경에서 PATH에 추가
-          pnpm -v  # 설치 확인
-
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+        run: npm ci
 
-      - name: Build project
-        run: pnpm build
+      - name: Build
+        run: npm run build
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v1
@@ -40,7 +28,9 @@ jobs:
           aws-region: ${{ secrets.AWS_REGION }}
 
       - name: Deploy to S3
-        run: aws s3 sync out/ s3://${{ secrets.S3_BUCKET_NAME }} --delete
+        run: |
+          aws s3 sync out/ s3://${{ secrets.S3_BUCKET_NAME }} --delete
 
       - name: Invalidate CloudFront cache
-        run: aws cloudfront create-invalidation --distribution-id ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }} --paths "/*"
+        run: |
+          aws cloudfront create-invalidation --distribution-id ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }} --paths "/*"
